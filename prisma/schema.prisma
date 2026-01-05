@@ -1,0 +1,66 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model Profile {
+  id              String     @id @default(uuid())
+  full_name       String?
+  avatar_url      String?
+  wallet_address  String?
+  wallet_type     String?
+  wallet_verified Boolean    @default(false)
+  created_at      DateTime   @default(now())
+  updated_at      DateTime   @default(now())
+  campaigns       Campaign[]
+
+  @@map("profiles")
+}
+
+model Campaign {
+  id             String         @id @default(uuid())
+  created_at     DateTime       @default(now())
+  updated_at     DateTime       @default(now())
+  title          String
+  description    String?        @db.Text
+  current_amount Decimal        @default(0) @db.Decimal(15, 2)
+  goal_amount    Decimal        @db.Decimal(15, 2)
+  status         String         @default("active")
+  category       String?
+  image_url      String?
+  wallet_address String?
+  payment_method String?
+  creator_id     String
+  creator        Profile        @relation(fields: [creator_id], references: [id])
+  contributions  Contribution[]
+
+  @@map("campaigns")
+}
+
+model Contribution {
+  id             String   @id @default(uuid())
+  created_at     DateTime @default(now())
+  amount         Decimal  @db.Decimal(15, 2)
+  message        String?  @db.Text
+  anonymous      Boolean  @default(false)
+  campaign_id    String
+  campaign       Campaign @relation(fields: [campaign_id], references: [id])
+  contributor_id String 
+
+  @@map("contributions")
+}
+
+model PaymentSession {
+  id         String   @id @default(uuid())
+  created_at DateTime @default(now())
+  tx_hash    String   @unique
+  endpoint   String
+  status     String
+  amount     Decimal  @db.Decimal(15, 2)
+
+  @@map("payment_sessions")
+}

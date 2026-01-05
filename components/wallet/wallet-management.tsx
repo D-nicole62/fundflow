@@ -1,0 +1,328 @@
+"use client"
+
+import { useState, useEffect } from "react"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { Badge } from "@/components/ui/badge"
+import { Alert, AlertDescription } from "@/components/ui/alert"
+import { useAccount } from "wagmi"
+import { useAuth } from "@/components/providers"
+import { Wallet, Check, AlertTriangle, Copy, ExternalLink } from "lucide-react"
+import { createClient } from "@/lib/supabase/client"
+
+interface WalletInfo {
+  address: string
+  type: string
+  verified: boolean
+  isDefault: boolean
+}
+
+export function WalletManagement() {
+  const [wallets, setWallets] = useState<WalletInfo[]>([])
+  const [newWalletAddress, setNewWalletAddress] = useState("")
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const [success, setSuccess] = useState<string | null>(null)
+  const { address: connectedWallet, isConnected } = useAccount()
+  const { user } = useAuth()
+  const supabase = createClient()
+
+  useEffect(() => {
+    loadUserWallets()
+  }, [user])
+
+  const loadUserWallets = async () => {
+    if (!user) return
+
+    try {
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("wallet_address, wallet_type, wallet_verified")
+        .eq("id", user.id)
+        .single()
+
+      if (profile?.wallet_address) {
+        setWallets([{
+          address: profile.wallet_address,
+          type: profile.wallet_type || "external",
+          verified: profile.wallet_verified || false,
+          isDefault: true
+        }])
+      }
+    } catch (error) {
+      console.error("Error loading wallets:", error)
+    }
+  }
+
+  const validateWalletAddress = (address: string): boolean => {
+    return /^0x[a-fA-F0-9]{40}$/.test(address)
+  }
+
+  const addWallet = async () => {
+    if (!newWalletAddress.trim()) {
+      setError("Please enter a wallet address")
+      return
+    }
+
+    if (!validateWalletAddress(newWalletAddress)) {
+      setError("Invalid wallet address format")
+      return
+    }
+
+    if (!user) {
+      setError("Please log in to add a wallet")
+      return
+    }
+
+    setLoading(true)
+    setError(null)
+    setSuccess(null)
+
+    try {
+      // Check if wallet already exists
+      const existingWallet = wallets.find(w => w.address.toLowerCase() === newWalletAddress.toLowerCase())
+      if (existingWallet) {
+        setError("This wallet address is already added")
+        return
+      }
+
+      // Update profile with new wallet
+      const { error: updateError } = await supabase
+        .from("profiles")
+        .update({
+          wallet_address: newWalletAddress.toLowerCase(),
+          wallet_type: newWalletAddress.toLowerCase() === connectedWallet?.toLowerCase() ? "connected" : "external",
+          wallet_verified: newWalletAddress.toLowerCase() === connectedWallet?.toLowerCase(),
+          updated_at: new Date().toISOString()
+        })
+        .eq("id", user.id)
+
+      if (updateError) {
+        throw updateError
+      }
+
+      setSuccess("Wallet added successfully!")
+      setNewWalletAddress("")
+      await loadUserWallets()
+    } catch (error: any) {
+      setError(error.message || "Failed to add wallet")
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const verifyWallet = async (address: string) => {
+    if (!connectedWallet || address.toLowerCase() !== connectedWallet.toLowerCase()) {
+      setError("Please connect the wallet you want to verify")
+      return
+    }
+
+    setLoading(true)
+    try {
+      const { error } = await supabase
+        .from("profiles")
+        .update({
+          wallet_verified: true,
+          wallet_type: "connected",
+          updated_at: new Date().toISOString()
+        })
+        .eq("id", user?.id)
+        .eq("wallet_address", address.toLowerCase())
+
+      if (error) throw error
+
+      setSuccess("Wallet verified successfully!")
+      await loadUserWallets()
+    } catch (error: any) {
+      setError(error.message || "Failed to verify wallet")
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const removeWallet = async (address: string) => {
+    if (!user) return
+
+    setLoading(true)
+    try {
+      const { error } = await supabase
+        .from("profiles")
+        .update({
+          wallet_address: null,
+          wallet_type: null,
+          wallet_verified: false,
+          updated_at: new Date().toISOString()
+        })
+        .eq("id", user.id)
+
+      if (error) throw error
+
+      setSuccess("Wallet removed successfully!")
+      await loadUserWallets()
+    } catch (error: any) {
+      setError(error.message || "Failed to remove wallet")
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const copyToClipboard = (text: string) => {
+    navigator.clipboard.writeText(text)
+    setSuccess("Address copied to clipboard!")
+    setTimeout(() => setSuccess(null), 2000)
+  }
+
+  return (
+    <div className="space-y-6">
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Wallet className="w-5 h-5" />
+            Wallet Management
+          </CardTitle>
+          <p className="text-sm text-gray-600">
+            Manage your receiving wallet addresses for campaign contributions and x402 payments.
+          </p>
+        </CardHeader>
+        <CardContent className="space-y-6">
+          {error && (
+            <Alert variant="destructive">
+              <AlertTriangle className="h-4 w-4" />
+              <AlertDescription>{error}</AlertDescription>
+            </Alert>
+          )}
+
+          {success && (
+            <Alert className="border-green-200 text-green-800 bg-green-50">
+              <Check className="h-4 w-4" />
+              <AlertDescription>{success}</AlertDescription>
+            </Alert>
+          )}
+
+          {/* Add New Wallet */}
+          <div className="space-y-4">
+            <h3 className="text-lg font-semibold">Add Receiving Wallet</h3>
+            <div className="space-y-3">
+              <div>
+                <Label htmlFor="wallet-address">Wallet Address</Label>
+                <Input
+                  id="wallet-address"
+                  placeholder="0x..."
+                  value={newWalletAddress}
+                  onChange={(e) => setNewWalletAddress(e.target.value)}
+                  disabled={loading}
+                />
+                <p className="text-xs text-gray-500 mt-1">
+                  This address will receive USDC payments from your campaigns
+                </p>
+              </div>
+              <Button 
+                onClick={addWallet} 
+                disabled={loading || !newWalletAddress.trim()}
+                className="w-full sm:w-auto"
+              >
+                {loading ? "Adding..." : "Add Wallet"}
+              </Button>
+            </div>
+          </div>
+
+          {/* Current Wallets */}
+          <div className="space-y-4">
+            <h3 className="text-lg font-semibold">Your Wallets</h3>
+            {wallets.length === 0 ? (
+              <div className="text-center py-8 text-gray-500">
+                <Wallet className="w-12 h-12 mx-auto mb-4 opacity-50" />
+                <p>No wallets added yet</p>
+                <p className="text-sm">Add a wallet address to receive payments</p>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {wallets.map((wallet) => (
+                  <Card key={wallet.address} className="p-4">
+                    <div className="flex items-center justify-between">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-3 mb-2">
+                          <code className="text-sm font-mono bg-gray-100 px-2 py-1 rounded">
+                            {wallet.address.slice(0, 10)}...{wallet.address.slice(-8)}
+                          </code>
+                          <div className="flex gap-2">
+                            {wallet.isDefault && (
+                              <Badge variant="secondary">Default</Badge>
+                            )}
+                            {wallet.verified ? (
+                              <Badge className="bg-green-100 text-green-800">
+                                <Check className="w-3 h-3 mr-1" />
+                                Verified
+                              </Badge>
+                            ) : (
+                              <Badge variant="outline">Unverified</Badge>
+                            )}
+                            <Badge variant="outline">{wallet.type}</Badge>
+                          </div>
+                        </div>
+                        <div className="flex gap-2">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => copyToClipboard(wallet.address)}
+                          >
+                            <Copy className="w-4 h-4 mr-1" />
+                            Copy
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => window.open(`https://basescan.org/address/${wallet.address}`, '_blank')}
+                          >
+                            <ExternalLink className="w-4 h-4 mr-1" />
+                            View on Basescan
+                          </Button>
+                        </div>
+                      </div>
+                      <div className="flex flex-col gap-2">
+                        {!wallet.verified && isConnected && (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => verifyWallet(wallet.address)}
+                            disabled={loading}
+                          >
+                            Verify
+                          </Button>
+                        )}
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => removeWallet(wallet.address)}
+                          disabled={loading}
+                          className="text-red-600 hover:text-red-700"
+                        >
+                          Remove
+                        </Button>
+                      </div>
+                    </div>
+                  </Card>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Connected Wallet Info */}
+          {isConnected && (
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+              <h4 className="font-semibold text-blue-900 mb-2">Connected Wallet</h4>
+              <p className="text-sm text-blue-800 mb-2">
+                Currently connected: <code className="font-mono">{connectedWallet}</code>
+              </p>
+              <p className="text-xs text-blue-700">
+                You can verify your wallet ownership by ensuring this address matches one of your saved wallets.
+              </p>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+    </div>
+  )
+} 
