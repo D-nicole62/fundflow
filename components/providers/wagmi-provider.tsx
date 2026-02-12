@@ -15,22 +15,22 @@ interface WagmiOnlyProviderProps {
 const config = createConfig({
   chains: [base, baseSepolia],
   connectors: [
-    // Primary: Coinbase Smart Wallet
+    // Primary: Coinbase Smart Wallet 
     coinbaseWallet({
-      appName: "FundFlow",
-      appLogoUrl: "https://fundflow.app/logo.png",
+      appName: "Thula Funds",
+      appLogoUrl: "/public/images/logo2.png",
       preference: "smartWalletOnly",
     }),
     // Fallback: Injected wallets (MetaMask, etc.)
     injected(),
     // Optional: WalletConnect (only if project ID is available)
-    ...(process.env.NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID && 
-        process.env.NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID !== "your_walletconnect_project_id_here" 
+    ...(process.env.NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID &&
+      process.env.NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID !== "your_walletconnect_project_id_here"
       ? [
-          walletConnect({
-            projectId: process.env.NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID,
-          })
-        ] 
+        walletConnect({
+          projectId: process.env.NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID,
+        })
+      ]
       : []
     ),
   ],

@@ -1,25 +1,25 @@
 export function CommunityShowcase() {
   const communityMembers = [
     {
-      name: "Amara Johnson",
-      location: "Atlanta, Georgia",
-      image: "/images/black-woman-leader.png",
+      name: "Diana Ndhlovu",
+      location: "Lusaka, Zambia",
+      image: "/images/image1.jpeg",
       story: "Raised $25,000 for youth mentorship program",
       impact: "150+ youth mentored",
       category: "Education",
     },
     {
-      name: "Marcus Williams",
-      location: "Detroit, Michigan",
-      image: "/images/black-man-entrepreneur.png",
+      name: "Nokuthula Mthembu",
+      location: "Lesotho, South Africa",
+      image: "/images/image2.jpeg",
       story: "Funded tech training for underserved communities",
       impact: "200+ people trained",
       category: "Technology",
     },
     {
-      name: "Zara Thompson",
-      location: "Houston, Texas",
-      image: "/images/black-youth-education.png",
+      name: "Dina Ndhlovu",
+      location: "Lilongwe, Malawi",
+      image: "/images/image1.jpeg",
       story: "Built community learning center",
       impact: "500+ students served",
       category: "Community",
@@ -32,8 +32,7 @@ export function CommunityShowcase() {
         <div className="mx-auto max-w-2xl text-center mb-16">
           <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">Community Impact Stories</h2>
           <p className="mt-4 text-lg text-muted-foreground">
-            Real Black entrepreneurs and leaders making transformative change
-          </p>
+            Hear from our community members.          </p>
         </div>
 
         <div className="grid gap-8 md:grid-cols-3">
@@ -69,10 +68,10 @@ export function CommunityShowcase() {
           ))}
         </div>
 
-        <div className="text-center mt-16">
+        {/* <div className="text-center mt-16">
           <div className="bg-white/80 backdrop-blur-sm rounded-2xl p-8 border border-white/20 shadow-lg max-w-2xl mx-auto">
             <p className="text-muted-foreground mb-6 font-medium">
-              Join our global community of Black changemakers and entrepreneurs
+              Join our global community
             </p>
             <div className="flex justify-center items-center gap-4 mb-6">
               <div className="flex -space-x-3">
@@ -105,7 +104,7 @@ export function CommunityShowcase() {
               </div>
             </div>
           </div>
-        </div>
+        </div> */}
       </div>
     </section>
   )

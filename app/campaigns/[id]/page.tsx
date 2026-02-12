@@ -1,7 +1,7 @@
-import { createClient } from "@/lib/supabase/server"
+import { prisma } from "@/lib/prisma"
 import { notFound } from "next/navigation"
 import { CampaignDetailView } from "@/components/campaigns/campaign-detail-view"
-import type { Campaign, Contribution, CampaignUpdate } from "@/types/campaign"
+import type { Campaign } from "@/types/campaign"
 
 interface CampaignPageProps {
   params: {
@@ -10,76 +10,62 @@ interface CampaignPageProps {
 }
 
 export default async function CampaignPage({ params }: CampaignPageProps) {
-  const supabase = await createClient()
-  const campaignId = await params.id
+  const campaignId = params.id
 
   // Fetch campaign with creator and contributions
-  const { data: campaign, error } = await supabase
-    .from("campaigns")
-    .select(`
-      *,
-      profiles!campaigns_creator_id_fkey (
-        id,
-        full_name,
-        avatar_url,
-        bio,
-        created_at,
-        updated_at
-      ),
-      contributions (
-        id,
-        amount,
-        message,
-        anonymous,
-        created_at,
-        contributor_id,
-        profiles!contributions_contributor_id_fkey (
-          id,
-          full_name,
-          avatar_url,
-          bio,
-          created_at,
-          updated_at
-        )
-      ),
-      campaign_updates (
-        id,
-        title,
-        content,
-        created_at
-      )
-    `)
-    .eq("id", campaignId)
-    .eq("status", "active")
-    .single()
+  const campaignData = await prisma.campaign.findUnique({
+    where: {
+      id: campaignId,
+      status: "active"
+    },
+    include: {
+      creator: true,
+      campaign_updates: true,
+      contributions: {
+        include: {
+          contributor: true
+        },
+        orderBy: { created_at: 'desc' }
+      }
+    }
+  })
 
-  if (error || !campaign) {
-    console.error("Campaign fetch error:", error)
+  if (!campaignData) {
+    console.error("Campaign not found or error")
     notFound()
   }
 
-  // Get current user for contribution permissions
-  const { data: { user } } = await supabase.auth.getUser()
-
-  // Get user profile if authenticated
-  let currentUser = null
-  if (user) {
-    const { data: profile } = await supabase
-      .from("profiles")
-      .select("*")
-      .eq("id", user.id)
-      .single()
-    
-    currentUser = profile
+  // Map to exclude Decimal and match expected UI types (mostly aliasing relations to "profiles")
+  const campaign = {
+    ...campaignData,
+    current_amount: Number(campaignData.current_amount),
+    goal_amount: Number(campaignData.goal_amount),
+    profiles: campaignData.creator, // Alias for UI compatibility
+    contributions: campaignData.contributions.map(c => ({
+      ...c,
+      amount: Number(c.amount),
+      profiles: c.contributor // Alias for UI compatibility
+    })),
+    campaign_updates: campaignData.campaign_updates.map(u => ({
+      ...u,
+      created_at: u.created_at.toISOString()
+    }))
   }
+
+  // Get current user for contribution permissions (Mock)
+  // In real app, check cookies/headers. For now, assume null or fetch a demo user if we want access.
+  // The UI connects to wallet so maybe user profile isn't strictly needed for view unless owning it.
+  // Let's assume no user logged in server-side for this view to keep it simple, 
+  // or checks local storage client-side. The prop is `currentUser`.
+  const currentUser = null
 
   return (
     <div className="min-h-screen bg-muted/30">
-      <CampaignDetailView 
-        campaign={campaign as Campaign} 
-        contributions={campaign.contributions || []}
+      <CampaignDetailView
+        campaign={campaign as any}
+        contributions={campaign.contributions}
         updates={campaign.campaign_updates || []}
-        currentUser={currentUser} 
+        currentUser={currentUser}
       />
     </div>
   )
@@ -87,14 +73,12 @@ export default async function CampaignPage({ params }: CampaignPageProps) {
 
 // Generate metadata for the page
 export async function generateMetadata({ params }: CampaignPageProps) {
-  const supabase = await createClient()
-  const campaignId = await params.id
-  
-  const { data: campaign } = await supabase
-    .from("campaigns")
-    .select("title, description, image_url")
-    .eq("id", campaignId)
-    .single()
+  const campaignId = params.id
+
+  const campaign = await prisma.campaign.findUnique({
+    where: { id: campaignId },
+    select: { title: true, description: true, image_url: true }
+  })
 
   if (!campaign) {
     return {
@@ -103,7 +87,7 @@ export async function generateMetadata({ params }: CampaignPageProps) {
   }
 
   return {
-    title: `${campaign.title} - FundFlow`,
+    title: `${campaign.title} - Thula Funds`,
     description: campaign.description?.slice(0, 160) + "...",
     openGraph: {
       title: campaign.title,

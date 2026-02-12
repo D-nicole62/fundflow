@@ -10,7 +10,7 @@ import { SmartWalletConnect } from "@/components/web3/smart-wallet-connect"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { CheckCircle, AlertTriangle, Wallet, Loader2, Plus } from "lucide-react"
 import { useAuth } from "@/components/providers"
-import { createClient } from "@/lib/supabase/client"
+import { getUserWallet, addWallet as addWalletAction } from "@/app/actions/wallet"
 
 interface WalletSetupStepProps {
   onComplete: (walletAddress: string) => void
@@ -33,7 +33,6 @@ export function WalletSetupStep({ onComplete, required = true }: WalletSetupStep
   const [newWalletAddress, setNewWalletAddress] = useState("")
   const [loading, setLoading] = useState(false)
   const { user } = useAuth()
-  const supabase = createClient()
 
   useEffect(() => {
     setMounted(true)
@@ -46,20 +45,11 @@ export function WalletSetupStep({ onComplete, required = true }: WalletSetupStep
     if (!user) return
 
     try {
-      const { data: profile } = await supabase
-        .from("profiles")
-        .select("wallet_address, wallet_type, wallet_verified")
-        .eq("id", user.id)
-        .single()
+      const wallets = await getUserWallet(user.id)
 
-      if (profile?.wallet_address) {
-        const wallets = [{
-          address: profile.wallet_address,
-          type: profile.wallet_type || "external",
-          verified: profile.wallet_verified || false
-        }]
+      if (wallets.length > 0) {
         setUserWallets(wallets)
-        
+
         // Auto-select if only one wallet
         if (wallets.length === 1) {
           setSelectedWallet(wallets[0].address)
@@ -94,17 +84,9 @@ export function WalletSetupStep({ onComplete, required = true }: WalletSetupStep
 
     setLoading(true)
     try {
-      const { error } = await supabase
-        .from("profiles")
-        .update({
-          wallet_address: newWalletAddress.toLowerCase(),
-          wallet_type: "external",
-          wallet_verified: false,
-          updated_at: new Date().toISOString()
-        })
-        .eq("id", user?.id)
+      const result = await addWalletAction(user!.id, newWalletAddress)
 
-      if (error) throw error
+      if (result.error) throw new Error(result.error)
 
       // Reload wallets and select the new one
       await loadUserWallets()
@@ -138,9 +120,8 @@ export function WalletSetupStep({ onComplete, required = true }: WalletSetupStep
     <div className="space-y-4">
       <div className="flex items-center gap-2 mb-4">
         <div
-          className={`w-8 h-8 rounded-full flex items-center justify-center ${
-            isValidated ? "bg-green-100 text-green-600" : "bg-muted text-muted-foreground"
-          }`}
+          className={`w-8 h-8 rounded-full flex items-center justify-center ${isValidated ? "bg-green-100 text-green-600" : "bg-muted text-muted-foreground"
+            }`}
         >
           {isValidated ? <CheckCircle className="h-5 w-5" /> : <Wallet className="h-5 w-5" />}
         </div>
@@ -234,7 +215,7 @@ export function WalletSetupStep({ onComplete, required = true }: WalletSetupStep
         <div className="absolute inset-x-0 top-1/2 transform -translate-y-1/2">
           <div className="flex items-center">
             <div className="flex-1 border-t border-gray-300" />
-            <span className="px-3 text-sm text-gray-500 bg-white">or connect your wallet</span>
+            {/* <span className="px-3 text-sm text-gray-500 bg-white">or connect your wallet</span> */}
             <div className="flex-1 border-t border-gray-300" />
           </div>
         </div>

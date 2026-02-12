@@ -22,14 +22,14 @@ export function FeaturesSection() {
       title: "Community Driven",
       description: "Build a community around your cause with social features.",
     },
-    {
-      title: "Mobile First",
-      description: "Optimized for mobile devices with a responsive design.",
-    },
+    // {
+    //   title: "Mobile First",
+    //   description: "Optimized for mobile devices with a responsive design.",
+    // },
   ]
 
   return (
-    <section className="py-16 sm:py-24 bg-muted/30">
+    <section className="py-2 sm:py-24 bg-muted/30">
       <div className="container">
         <div className="mx-auto max-w-2xl text-center mb-16">
           <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">Everything you need to succeed</h2>
@@ -106,7 +106,7 @@ export function FeaturesSection() {
           </div>
 
           {/* Third row - 1 wide card */}
-          <Card className="border-0 shadow-sm hover:shadow-lg transition-all duration-300 bg-gradient-to-r from-slate-50 to-slate-100">
+          {/* <Card className="border-0 shadow-sm hover:shadow-lg transition-all duration-300 bg-gradient-to-r from-slate-50 to-slate-100">
             <CardContent className="p-8">
               <div className="max-w-2xl">
                 <div className="inline-flex items-center px-3 py-1 rounded-full bg-slate-200 text-slate-800 text-sm font-medium mb-4">
@@ -116,7 +116,7 @@ export function FeaturesSection() {
                 <p className="text-muted-foreground leading-relaxed">{features[5].description}</p>
               </div>
             </CardContent>
-          </Card>
+          </Card> */}
         </div>
       </div>
     </section>

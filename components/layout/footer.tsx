@@ -1,4 +1,7 @@
 import Link from "next/link"
+import React from "react"
+import Image from "next/image"
+
 
 export function Footer() {
   return (
@@ -7,16 +10,20 @@ export function Footer() {
         <div className="grid gap-8 lg:grid-cols-4">
           <div className="lg:col-span-2">
             <Link href="/" className="flex items-center space-x-2 mb-4">
-              <div className="h-8 w-8 rounded-lg bg-primary flex items-center justify-center">
-                <span className="text-primary-foreground font-bold text-lg">F</span>
-              </div>
-              <span className="font-bold text-xl">FundFlow</span>
+              <Image
+                src="/images/logo2.png"
+                alt="Thula Funds Logo"
+                width={70}
+                height={70}
+                className="rounded-lg"
+              />
+              <span className="font-bold text-xl text-pink-500">Thula Funds</span>
             </Link>
             <p className="text-muted-foreground max-w-md">
-              The future of crowdfunding with blockchain transparency and security. Fund projects you believe in with
-              complete trust.
+              Where Community Funds Rest Safely.
             </p>
           </div>
+
 
           <div>
             <h3 className="font-semibold mb-4">Platform</h3>
@@ -36,11 +43,11 @@ export function Footer() {
                   How it Works
                 </Link>
               </li>
-              <li>
+              {/* <li>
                 <Link href="/pricing" className="hover:text-foreground transition-colors">
                   Pricing
                 </Link>
-              </li>
+              </li> */}
             </ul>
           </div>
 
@@ -62,17 +69,17 @@ export function Footer() {
                   Contact
                 </Link>
               </li>
-              <li>
+              {/* <li>
                 <Link href="/careers" className="hover:text-foreground transition-colors">
                   Careers
                 </Link>
-              </li>
+              </li> */}
             </ul>
           </div>
         </div>
 
         <div className="mt-8 pt-8 border-t flex flex-col sm:flex-row justify-between items-center">
-          <p className="text-sm text-muted-foreground">© 2024 FundFlow. All rights reserved.</p>
+          <p className="text-sm text-muted-foreground">© 2026 Thula Funds. All rights reserved.</p>
           <div className="flex space-x-6 mt-4 sm:mt-0">
             <Link href="/privacy" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
               Privacy Policy

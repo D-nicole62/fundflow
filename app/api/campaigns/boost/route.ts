@@ -1,17 +1,15 @@
 import { type NextRequest, NextResponse } from "next/server"
-import { createClient } from "@/lib/supabase/server"
+import { prisma } from "@/lib/prisma"
 
 export async function POST(request: NextRequest) {
   try {
-    // Payment verification is handled by middleware
-    const supabase = await createClient()
     const { campaignId, boostType, duration } = await request.json()
 
     if (!campaignId || !boostType) {
       return NextResponse.json({ error: "Campaign ID and boost type are required" }, { status: 400 })
     }
 
-    // Get payment proof from headers (set by middleware after verification)
+    // Get payment proof from headers
     const paymentProof = request.headers.get("x-payment-proof")
 
     if (!paymentProof) {
@@ -19,31 +17,31 @@ export async function POST(request: NextRequest) {
     }
 
     // Verify campaign exists
-    const { data: campaign } = await supabase.from("campaigns").select("*").eq("id", campaignId).single()
+    const campaign = await prisma.campaign.findUnique({
+      where: { id: campaignId }
+    })
 
     if (!campaign) {
       return NextResponse.json({ error: "Campaign not found" }, { status: 404 })
     }
 
-    // Create boost record with payment proof
-    const boostData = {
-      campaign_id: campaignId,
-      boost_type: boostType,
-      duration_hours: duration || 24,
-      status: "active",
-      payment_proof: paymentProof,
-      created_at: new Date().toISOString(),
-      expires_at: new Date(Date.now() + (duration || 24) * 60 * 60 * 1000).toISOString(),
-    }
+    // Create boost record
+    const durationHours = duration || 24
+    const expiresAt = new Date(Date.now() + durationHours * 60 * 60 * 1000)
 
-    const { data: boost, error } = await supabase.from("campaign_boosts").insert(boostData).select().single()
-
-    if (error) {
-      throw error
-    }
+    const boost = await prisma.campaignBoost.create({
+      data: {
+        campaign_id: campaignId,
+        boost_type: boostType,
+        duration_hours: durationHours,
+        status: "active",
+        payment_proof: paymentProof,
+        expires_at: expiresAt
+      }
+    })
 
     // Apply boost effects
-    const boostEffects = await applyBoostEffects(supabase, campaignId, boostType)
+    const boostEffects = await applyBoostEffects(campaignId, boostType, expiresAt)
 
     return NextResponse.json({
       success: true,
@@ -58,7 +56,7 @@ export async function POST(request: NextRequest) {
   }
 }
 
-async function applyBoostEffects(supabase: any, campaignId: string, boostType: string) {
+async function applyBoostEffects(campaignId: string, boostType: string, expiresAt: Date) {
   const effects = {
     visibility_increase: 0,
     featured_placement: false,
@@ -84,14 +82,14 @@ async function applyBoostEffects(supabase: any, campaignId: string, boostType: s
   }
 
   // Update campaign with boost flags
-  await supabase
-    .from("campaigns")
-    .update({
+  await prisma.campaign.update({
+    where: { id: campaignId },
+    data: {
       is_boosted: true,
       boost_type: boostType,
-      boost_expires_at: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
-    })
-    .eq("id", campaignId)
+      boost_expires_at: expiresAt,
+    }
+  })
 
   return effects
 }

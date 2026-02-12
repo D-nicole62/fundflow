@@ -7,7 +7,6 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { createClient } from "@/lib/supabase/client"
 import { Loader2, ArrowLeft } from "lucide-react"
 
 export function ForgotPasswordForm() {
@@ -15,7 +14,6 @@ export function ForgotPasswordForm() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState("")
   const [success, setSuccess] = useState(false)
-  const supabase = createClient()
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -23,12 +21,9 @@ export function ForgotPasswordForm() {
     setError("")
 
     try {
-      const { error } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: `${window.location.origin}/auth/reset-password`,
-      })
-      
-      if (error) throw error
-      
+      // Mock password reset for demo
+      await new Promise(resolve => setTimeout(resolve, 1500))
+
       setSuccess(true)
     } catch (error: any) {
       setError(error.message)
@@ -50,8 +45,8 @@ export function ForgotPasswordForm() {
           <p className="text-sm text-muted-foreground mb-4">
             Didn't receive the email? Check your spam folder or try again.
           </p>
-          <Button 
-            variant="outline" 
+          <Button
+            variant="outline"
             onClick={() => {
               setSuccess(false)
               setEmail("")

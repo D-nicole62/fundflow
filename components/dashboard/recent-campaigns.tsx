@@ -1,5 +1,5 @@
 import Link from "next/link"
-import { createClient } from "@/lib/supabase/server"
+import { prisma } from "@/lib/prisma"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -12,61 +12,22 @@ interface RecentCampaignsProps {
 
 export async function RecentCampaigns({ userId }: RecentCampaignsProps) {
   try {
-    const supabase = await createClient()
-
-    const { data: campaigns, error } = await supabase
-      .from("campaigns")
-      .select(`
-        id,
-        title,
-        description,
-        goal_amount,
-        current_amount,
-        status,
-        created_at,
-        image_url,
-        category
-      `)
-      .eq("creator_id", userId)
-      .order("created_at", { ascending: false })
-      .limit(5)
-
-    if (error) {
-      console.error("Error fetching campaigns:", error)
-
-      // Check if it's a table doesn't exist error
-      if (error.message?.includes("does not exist")) {
-        return (
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between">
-              <CardTitle>Recent Campaigns</CardTitle>
-              <Link href="/campaigns/create">
-                <Button size="sm">
-                  <Plus className="mr-2 h-4 w-4" />
-                  New Campaign
-                </Button>
-              </Link>
-            </CardHeader>
-            <CardContent>
-              <div className="text-center py-8">
-                <div className="w-16 h-16 bg-orange-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <AlertTriangle className="h-8 w-8 text-orange-600" />
-                </div>
-                <h3 className="font-semibold mb-2">Database Setup Required</h3>
-                <p className="text-sm text-muted-foreground mb-4">
-                  The campaigns table needs to be created. Please run the database setup script.
-                </p>
-                <div className="bg-orange-50 border border-orange-200 rounded-md p-3 mb-4">
-                  <p className="text-xs font-mono text-orange-800">Run: scripts/complete-database-setup.sql</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        )
-      }
-
-      throw error
-    }
+    const campaigns = await prisma.campaign.findMany({
+      where: { creator_id: userId },
+      select: {
+        id: true,
+        title: true,
+        description: true,
+        goal_amount: true,
+        current_amount: true,
+        status: true,
+        created_at: true,
+        image_url: true,
+        category: true,
+      },
+      orderBy: { created_at: "desc" },
+      take: 5,
+    })
 
     return (
       <Card>
@@ -196,7 +157,6 @@ export async function RecentCampaigns({ userId }: RecentCampaignsProps) {
   } catch (error) {
     console.error("RecentCampaigns error:", error)
 
-    // Return error state instead of throwing
     return (
       <Card>
         <CardHeader className="flex flex-row items-center justify-between">
@@ -215,7 +175,7 @@ export async function RecentCampaigns({ userId }: RecentCampaignsProps) {
             </div>
             <h3 className="font-semibold mb-2">Unable to load campaigns</h3>
             <p className="text-sm text-muted-foreground mb-4">
-              There was an error loading your campaigns. Please try refreshing the page.
+              There was an error loading your campaigns.
             </p>
             <div className="bg-red-50 border border-red-200 rounded-md p-3 mb-4">
               <p className="text-xs text-red-700">Error: {error instanceof Error ? error.message : "Unknown error"}</p>
@@ -226,3 +186,4 @@ export async function RecentCampaigns({ userId }: RecentCampaignsProps) {
     )
   }
 }
+

@@ -1,23 +1,14 @@
 "use server"
 
-import { createClient } from "@/lib/supabase/server"
+import { prisma } from "@/lib/prisma"
 import { revalidatePath } from "next/cache"
 
 export async function updateUserWallet(walletAddress: string) {
   try {
     console.log("updateUserWallet called with:", walletAddress)
 
-    const supabase = await createClient()
-
-    const {
-      data: { user },
-      error: authError,
-    } = await supabase.auth.getUser()
-
-    if (authError) {
-      console.error("Auth error:", authError)
-      throw new Error("Authentication failed")
-    }
+    // Mock Auth Check
+    const user = { id: "user-123" }
 
     if (!user) {
       throw new Error("User not authenticated")
@@ -37,23 +28,25 @@ export async function updateUserWallet(walletAddress: string) {
     console.log("Updating profile for user:", user.id, "with wallet:", cleanAddress)
 
     // Update user profile with wallet address
-    const { error: profileError } = await supabase.from("profiles").upsert(
-      {
+    // Using upsert to ensure profile exists
+    await prisma.profile.upsert({
+      where: { id: user.id },
+      update: {
+        wallet_address: cleanAddress,
+        wallet_type: "coinbase_smart_wallet",
+        wallet_verified: true,
+        updated_at: new Date(),
+      },
+      create: {
         id: user.id,
         wallet_address: cleanAddress,
         wallet_type: "coinbase_smart_wallet",
         wallet_verified: true,
-        updated_at: new Date().toISOString(),
-      },
-      {
-        onConflict: "id",
-      },
-    )
-
-    if (profileError) {
-      console.error("Profile update error:", profileError)
-      throw new Error(`Failed to update wallet address: ${profileError.message}`)
-    }
+        updated_at: new Date(),
+        // Add defaults for required fields if any (schema allows nulls mostly)
+        full_name: "Demo User"
+      }
+    })
 
     console.log("Wallet updated successfully")
 
@@ -64,36 +57,31 @@ export async function updateUserWallet(walletAddress: string) {
       revalidatePath("/wallet")
     } catch (revalidateError) {
       console.warn("Revalidation warning:", revalidateError)
-      // Don't fail the operation if revalidation fails
     }
 
     return { success: true, walletAddress: cleanAddress }
   } catch (error) {
     console.error("updateUserWallet error:", error)
-    throw error
+    throw error // Re-throw to be handled by caller
   }
 }
 
 export async function getUserWallet(userId: string) {
   try {
-    const supabase = await createClient()
+    // For safety, might want to check auth matches userId, but for read we can just read.
+    const profile = await prisma.profile.findUnique({
+      where: { id: userId },
+      select: {
+        wallet_address: true,
+        wallet_type: true,
+        wallet_verified: true
+      }
+    })
 
-    const { data, error } = await supabase
-      .from("profiles")
-      .select("wallet_address, wallet_type, wallet_verified")
-      .eq("id", userId)
-      .single()
-
-    if (error && error.code !== "PGRST116") {
-      // PGRST116 is "not found"
-      console.error("getUserWallet error:", error)
-      throw new Error("Failed to fetch wallet information")
-    }
-
-    return data || null
+    return profile || null
   } catch (error) {
     console.error("getUserWallet error:", error)
-    throw error
+    throw new Error("Failed to fetch wallet information")
   }
 }
 

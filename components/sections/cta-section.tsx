@@ -4,15 +4,14 @@ import { ArrowRight } from "lucide-react"
 
 export function CTASection() {
   return (
-    <section className="py-16 sm:py-24">
+    <section className="py-2 sm:py-24">
       <div className="container">
         <div className="relative isolate overflow-hidden bg-primary rounded-3xl px-6 py-16 text-center shadow-2xl sm:px-16">
           <h2 className="mx-auto max-w-2xl text-3xl font-bold tracking-tight text-primary-foreground sm:text-4xl">
             Ready to start your campaign?
           </h2>
           <p className="mx-auto mt-6 max-w-xl text-lg leading-8 text-primary-foreground/90">
-            Join thousands of creators who have successfully funded their projects with complete transparency and
-            security.
+            Join the people who have successfully achieved their campaign goals.
           </p>
           <div className="mt-10 flex items-center justify-center gap-x-6">
             <Link href="/auth/signup">

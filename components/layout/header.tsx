@@ -1,6 +1,7 @@
 "use client"
 
 import Link from "next/link"
+import Image from "next/image"
 import { Button } from "@/components/ui/button"
 import { useAuth } from "@/components/providers"
 import { Menu, X } from "lucide-react"
@@ -14,10 +15,14 @@ export function Header() {
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="container flex h-16 items-center justify-between">
         <Link href="/" className="flex items-center space-x-2">
-          <div className="h-8 w-8 rounded-lg bg-primary flex items-center justify-center">
-            <span className="text-primary-foreground font-bold text-lg">F</span>
-          </div>
-          <span className="font-bold text-xl">FundFlow</span>
+          <Image
+            src="/images/logo2.png"
+            alt="Thula Funds Logo"
+            width={70}
+            height={70}
+            className="rounded-lg"
+          />
+          <span className="font-bold text-xl text-pink-500">Thula Funds</span>
         </Link>
 
         {/* Desktop Navigation */}

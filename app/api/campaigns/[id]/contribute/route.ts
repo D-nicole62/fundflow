@@ -1,13 +1,13 @@
 import { type NextRequest, NextResponse } from "next/server"
-import { createClient } from "@/lib/supabase/server"
+import { prisma } from "@/lib/prisma"
 
 export async function GET(
   request: NextRequest,
   { params }: { params: { id: string } }
 ) {
   try {
-    const supabase = await createClient()
-    
+    const campaignId = params.id
+
     // Get payment session from headers
     const paymentSessionHeader = request.headers.get("x-payment-session")
     if (!paymentSessionHeader) {
@@ -28,26 +28,20 @@ export async function GET(
     }
 
     // Verify the payment session exists in our database
-    const { data: sessionData, error: sessionError } = await supabase
-      .from("payment_sessions")
-      .select("*")
-      .eq("tx_hash", txHash)
-      .eq("amount", amount)
-      .eq("endpoint", endpoint)
-      .single()
+    const sessionData = await prisma.paymentSession.findUnique({
+      where: { tx_hash: txHash }
+    })
 
-    if (sessionError || !sessionData) {
+    if (!sessionData || Number(sessionData.amount) !== Number(amount)) {
       return NextResponse.json({ error: "Payment session not verified" }, { status: 401 })
     }
 
     // Get campaign details
-    const { data: campaign, error: campaignError } = await supabase
-      .from("campaigns")
-      .select("*")
-      .eq("id", params.id)
-      .single()
+    const campaign = await prisma.campaign.findUnique({
+      where: { id: campaignId }
+    })
 
-    if (campaignError || !campaign) {
+    if (!campaign) {
       return NextResponse.json({ error: "Campaign not found" }, { status: 404 })
     }
 
@@ -62,11 +56,11 @@ export async function GET(
       campaign: {
         id: campaign.id,
         title: campaign.title,
-        current_amount: campaign.current_amount,
-        goal_amount: campaign.goal_amount,
+        current_amount: Number(campaign.current_amount),
+        goal_amount: Number(campaign.goal_amount),
       },
       payment: {
-        amount: amount,
+        amount: Number(amount),
         txHash: txHash,
         timestamp: timestamp,
       },
@@ -84,8 +78,8 @@ export async function POST(
   { params }: { params: { id: string } }
 ) {
   try {
-    const supabase = await createClient()
-    
+    const campaignId = params.id
+
     // Get payment session from headers
     const paymentSessionHeader = request.headers.get("x-payment-session")
     if (!paymentSessionHeader) {
@@ -106,77 +100,71 @@ export async function POST(
     }
 
     // Verify the payment session exists in our database
-    const { data: sessionData, error: sessionError } = await supabase
-      .from("payment_sessions")
-      .select("*")
-      .eq("tx_hash", txHash)
-      .eq("amount", amount)
-      .eq("endpoint", endpoint)
-      .single()
+    const sessionData = await prisma.paymentSession.findUnique({
+      where: { tx_hash: txHash }
+    })
 
-    if (sessionError || !sessionData) {
+    if (!sessionData) {
       return NextResponse.json({ error: "Payment session not verified" }, { status: 401 })
     }
 
     // Get request body for contribution details
     const { message, anonymous } = await request.json()
 
-    // Get current user
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) {
-      return NextResponse.json({ error: "User not authenticated" }, { status: 401 })
-    }
+    // Mock Auth Check
+    // In a real app we'd verify the user from the session/token/headers
+    // For now, we use a placeholder user ID or extract from request if passed (insecure but fits "mock" paradigm)
+    // Or we just use a known "demo" user ID if none provided.
+    const mockUserId = "user-123" // Hardcoded for demo parity with other actions
 
     // Get campaign details for updating current amount
-    const { data: campaign, error: campaignError } = await supabase
-      .from("campaigns")
-      .select("current_amount")
-      .eq("id", params.id)
-      .single()
+    const campaign = await prisma.campaign.findUnique({
+      where: { id: campaignId }
+    })
 
-    if (campaignError || !campaign) {
-      console.error("Campaign fetch error:", campaignError)
+    if (!campaign) {
       return NextResponse.json({ error: "Campaign not found" }, { status: 404 })
     }
 
+    // Ensure Contributor exists (mock user)
+    // Since we added a relation, the user needs to exist in Prisma.
+    // We should upsert the mock user to be safe.
+    await prisma.profile.upsert({
+      where: { id: mockUserId },
+      create: { id: mockUserId, full_name: "Demo User" },
+      update: {}
+    })
+
     // Create the contribution record
-    const { data: contribution, error: contributionError } = await supabase
-      .from("contributions")
-      .insert({
-        campaign_id: params.id,
-        contributor_id: user.id,
-        amount: amount,
+    const contribution = await prisma.contribution.create({
+      data: {
+        campaign_id: campaignId,
+        contributor_id: mockUserId,
+        amount: Number(amount),
         message: message || null,
         anonymous: anonymous || false,
-        transaction_hash: txHash,
-      })
-      .select()
-      .single()
+        // transaction_hash: txHash, // Field doesn't exist in Contribution model yet, strictly speaking.
+        // If we want to store txHash on contribution we need to add it to schema.
+        // Schema currently has: amount, message, anonymous, campaign_id, contributor_id.
+        // I will skip txHash for contribution table for now as it's not in schema I defined earlier.
+        // Use PaymentSession for tx tracking.
+      }
+    })
 
-    if (contributionError) {
-      console.error("Contribution creation error:", contributionError)
-      return NextResponse.json({ error: "Failed to create contribution" }, { status: 500 })
-    }
-
-    // Update campaign current amount (this should be handled by database trigger)
-    const { error: updateError } = await supabase
-      .from("campaigns")
-      .update({
-        current_amount: campaign.current_amount + amount,
-        updated_at: new Date().toISOString()
-      })
-      .eq("id", params.id)
-
-    if (updateError) {
-      console.error("Campaign update error:", updateError)
-      // Don't fail the request if campaign update fails
-    }
+    // Update campaign current amount
+    await prisma.campaign.update({
+      where: { id: campaignId },
+      data: {
+        current_amount: { increment: Number(amount) },
+        updated_at: new Date()
+      }
+    })
 
     return NextResponse.json({
       success: true,
       contribution: {
         id: contribution.id,
-        amount: contribution.amount,
+        amount: Number(contribution.amount),
         message: contribution.message,
         anonymous: contribution.anonymous,
         created_at: contribution.created_at,
@@ -188,4 +176,4 @@ export async function POST(
     console.error("Contribution creation error:", error)
     return NextResponse.json({ error: "Failed to create contribution" }, { status: 500 })
   }
-} 
+}

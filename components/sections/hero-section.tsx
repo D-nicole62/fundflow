@@ -44,19 +44,19 @@ export function HeroSection() {
   }
 
   return (
-    <section className="relative overflow-hidden bg-gradient-to-b from-background to-muted/20 py-20 sm:py-32">
+    <section className="relative overflow-hidden pt-6 pb-16 sm:pt-12 sm:pb-24">
 
 
       <div className="container relative z-10">
         <div className="mx-auto max-w-4xl text-center">
           <div className="mb-8 flex justify-center">
-            <div className="relative rounded-full px-3 py-1 text-sm leading-6 text-muted-foreground ring-1 ring-border hover:ring-primary/20 transition-all">
+            {/* <div className="relative rounded-full px-3 py-1 text-sm leading-6 text-muted-foreground ring-1 ring-border hover:ring-primary/20 transition-all">
               Powered by Web3 technology <span className="font-semibold text-primary">Learn more</span>
-            </div>
+            </div> */}
           </div>
 
           <h1 className="text-4xl font-bold tracking-tight sm:text-6xl lg:text-7xl">
-            Fund the Future with <span className="gradient-text">Transparency</span>
+            <span className="gradient-text">Funding With Peace Of Mind</span>
           </h1>
 
           <p className="mt-6 text-lg leading-8 text-muted-foreground max-w-2xl mx-auto">
@@ -64,7 +64,7 @@ export function HeroSection() {
             trust and accountability in crowdfunding.
           </p>
 
-                    <div className="mt-10 flex items-center justify-center gap-x-6">
+          <div className="mt-10 flex items-center justify-center gap-x-6">
             <Link href="/auth/signup">
               <Button size="lg" className="group">
                 Start Your Campaign

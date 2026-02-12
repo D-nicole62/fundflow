@@ -1,5 +1,5 @@
 import { redirect } from "next/navigation"
-import { createClient } from "@/lib/supabase/server"
+// import { createClient } from "@/lib/supabase/server" // REMOVED
 import { DashboardHeader } from "@/components/dashboard/dashboard-header"
 import { DashboardStats } from "@/components/dashboard/dashboard-stats"
 import { RecentCampaigns } from "@/components/dashboard/recent-campaigns"
@@ -8,59 +8,15 @@ import { Suspense } from "react"
 import { Card, CardContent } from "@/components/ui/card"
 import { Loader2 } from "lucide-react"
 
-function DashboardSkeleton() {
-  return (
-    <div className="min-h-screen bg-muted/30">
-      <div className="container py-8">
-        <div className="space-y-8">
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-            {[...Array(4)].map((_, i) => (
-              <Card key={i}>
-                <CardContent className="p-6">
-                  <div className="animate-pulse space-y-2">
-                    <div className="h-4 bg-muted rounded w-1/2"></div>
-                    <div className="h-8 bg-muted rounded w-3/4"></div>
-                    <div className="h-3 bg-muted rounded w-1/3"></div>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-          <div className="grid gap-8 lg:grid-cols-2">
-            {[...Array(2)].map((_, i) => (
-              <Card key={i}>
-                <CardContent className="p-6">
-                  <div className="animate-pulse space-y-4">
-                    <div className="h-6 bg-muted rounded w-1/3"></div>
-                    <div className="space-y-2">
-                      <div className="h-4 bg-muted rounded"></div>
-                      <div className="h-4 bg-muted rounded w-5/6"></div>
-                      <div className="h-4 bg-muted rounded w-4/6"></div>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        </div>
-      </div>
-    </div>
-  )
-}
-
 export default async function DashboardPage() {
   try {
-    const supabase = await createClient()
+    // Replaced Supabase Auth with Mock Context
+    // In a real app: check headers/cookies for session.
+    // For local demo/dev: Assume logged in as "user-123"
 
-    const {
-      data: { user },
-      error,
-    } = await supabase.auth.getUser()
-
-    if (error) {
-      console.error("Auth error:", error)
-      redirect("/auth/login")
-    }
+    // We can simulate a "check" here. If we wanted to enforce login page visit first,
+    // we would check a cookie. For now, we assume if they hit dashboard they are "logged in".
+    const user = { id: "user-123", email: "demo@example.com" }
 
     if (!user) {
       redirect("/auth/login")
@@ -88,7 +44,6 @@ export default async function DashboardPage() {
     )
   } catch (error) {
     console.error("Dashboard page error:", error)
-    // Return a fallback UI instead of throwing
     return (
       <div className="min-h-screen bg-muted/30">
         <div className="container py-8">

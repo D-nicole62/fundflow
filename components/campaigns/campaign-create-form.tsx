@@ -84,6 +84,7 @@ export function CampaignCreateForm() {
       const description = formData.get("description") as string
       const goalAmount = formData.get("goalAmount") as string
       const category = formData.get("category") as string
+      const imageFile = formData.get("image") as File
 
       console.log("Form data extracted:", { title, description, goalAmount, category, walletAddress })
 
@@ -101,19 +102,12 @@ export function CampaignCreateForm() {
         throw new Error("Campaign category is required")
       }
 
-      // Create campaign data object
-      const campaignData = {
-        title: title.trim(),
-        description: description.trim(),
-        goalAmount: goalAmount,
-        category: category,
-        imageUrl: imagePreview || "",
-        walletAddress: walletAddress,
-      }
+      // Add wallet address to form data
+      formData.append("walletAddress", walletAddress)
 
-      console.log("Calling createCampaignAction with:", campaignData)
+      console.log("Calling createCampaignAction with FormData")
 
-      const result = await createCampaignAction(campaignData)
+      const result = await createCampaignAction(formData)
       console.log("Campaign creation result:", result)
 
       if (!result.success) {
@@ -144,9 +138,8 @@ export function CampaignCreateForm() {
       <div className="flex items-center justify-center space-x-4 mb-8">
         <div className={`flex items-center ${currentStep >= 1 ? "text-primary" : "text-muted-foreground"}`}>
           <div
-            className={`w-8 h-8 rounded-full flex items-center justify-center border-2 ${
-              currentStep >= 1 ? "border-primary bg-primary text-primary-foreground" : "border-muted-foreground"
-            }`}
+            className={`w-8 h-8 rounded-full flex items-center justify-center border-2 ${currentStep >= 1 ? "border-primary bg-primary text-primary-foreground" : "border-muted-foreground"
+              }`}
           >
             {isWalletConnected ? <CheckCircle className="h-4 w-4" /> : "1"}
           </div>
@@ -155,9 +148,8 @@ export function CampaignCreateForm() {
         <div className={`w-8 h-0.5 ${currentStep >= 2 ? "bg-primary" : "bg-muted-foreground"}`}></div>
         <div className={`flex items-center ${currentStep >= 2 ? "text-primary" : "text-muted-foreground"}`}>
           <div
-            className={`w-8 h-8 rounded-full flex items-center justify-center border-2 ${
-              currentStep >= 2 ? "border-primary bg-primary text-primary-foreground" : "border-muted-foreground"
-            }`}
+            className={`w-8 h-8 rounded-full flex items-center justify-center border-2 ${currentStep >= 2 ? "border-primary bg-primary text-primary-foreground" : "border-muted-foreground"
+              }`}
           >
             2
           </div>

@@ -1,4 +1,4 @@
-import { createClient } from "@/lib/supabase/server"
+import { prisma } from "@/lib/prisma"
 import { CampaignGrid } from "@/components/campaigns/campaign-grid"
 import { CampaignFilters } from "@/components/campaigns/campaign-filters"
 import { Button } from "@/components/ui/button"
@@ -6,26 +6,38 @@ import { Plus } from "lucide-react"
 import Link from "next/link"
 
 export default async function CampaignsPage() {
-  const supabase = await createClient()
+  const campaignsData = await prisma.campaign.findMany({
+    where: { status: "active" },
+    orderBy: { created_at: "desc" },
+    select: {
+      id: true,
+      title: true,
+      description: true,
+      goal_amount: true,
+      current_amount: true,
+      image_url: true,
+      category: true,
+      created_at: true,
+      creator: {
+        select: {
+          full_name: true,
+          avatar_url: true
+        }
+      }
+    }
+  })
 
-  const { data: campaigns } = await supabase
-    .from("campaigns")
-    .select(`
-      id,
-      title,
-      description,
-      goal_amount,
-      current_amount,
-      image_url,
-      category,
-      created_at,
-      profiles!campaigns_creator_id_fkey (
-        full_name,
-        avatar_url
-      )
-    `)
-    .eq("status", "active")
-    .order("created_at", { ascending: false })
+  // Map Prisma result to match the structure expected by components (which expect 'profiles' from Supabase)
+  const campaigns = campaignsData.map(c => ({
+    ...c,
+    profiles: c.creator,
+    // Ensure numbers are numbers or strings as expected. Prisma Decimal is usually object or special type.
+    // However, if the component expects basic JSON numbers, we might need conversion. 
+    // Usually standard Next.js passing props works fine or we convert.
+    // For now assuming existing components handle what they get, but let's be safe on Decimal.
+    goal_amount: Number(c.goal_amount),
+    current_amount: Number(c.current_amount)
+  }))
 
   return (
     <div className="min-h-screen bg-muted/30">
@@ -48,7 +60,7 @@ export default async function CampaignsPage() {
             <CampaignFilters />
           </div>
           <div className="lg:col-span-3">
-            <CampaignGrid campaigns={campaigns || []} />
+            <CampaignGrid campaigns={campaigns} />
           </div>
         </div>
       </div>

@@ -10,7 +10,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert"
 import { useAccount } from "wagmi"
 import { useAuth } from "@/components/providers"
 import { Wallet, Check, AlertTriangle, Copy, ExternalLink } from "lucide-react"
-import { createClient } from "@/lib/supabase/client"
+import { getUserWallet, addWallet as addWalletAction, verifyWallet as verifyWalletAction, removeWallet as removeWalletAction } from "@/app/actions/wallet"
 
 interface WalletInfo {
   address: string
@@ -27,7 +27,6 @@ export function WalletManagement() {
   const [success, setSuccess] = useState<string | null>(null)
   const { address: connectedWallet, isConnected } = useAccount()
   const { user } = useAuth()
-  const supabase = createClient()
 
   useEffect(() => {
     loadUserWallets()
@@ -37,20 +36,8 @@ export function WalletManagement() {
     if (!user) return
 
     try {
-      const { data: profile } = await supabase
-        .from("profiles")
-        .select("wallet_address, wallet_type, wallet_verified")
-        .eq("id", user.id)
-        .single()
-
-      if (profile?.wallet_address) {
-        setWallets([{
-          address: profile.wallet_address,
-          type: profile.wallet_type || "external",
-          verified: profile.wallet_verified || false,
-          isDefault: true
-        }])
-      }
+      const userWallets = await getUserWallet(user.id)
+      setWallets(userWallets)
     } catch (error) {
       console.error("Error loading wallets:", error)
     }
@@ -88,19 +75,10 @@ export function WalletManagement() {
         return
       }
 
-      // Update profile with new wallet
-      const { error: updateError } = await supabase
-        .from("profiles")
-        .update({
-          wallet_address: newWalletAddress.toLowerCase(),
-          wallet_type: newWalletAddress.toLowerCase() === connectedWallet?.toLowerCase() ? "connected" : "external",
-          wallet_verified: newWalletAddress.toLowerCase() === connectedWallet?.toLowerCase(),
-          updated_at: new Date().toISOString()
-        })
-        .eq("id", user.id)
+      const result = await addWalletAction(user.id, newWalletAddress)
 
-      if (updateError) {
-        throw updateError
+      if (result.error) {
+        throw new Error(result.error)
       }
 
       setSuccess("Wallet added successfully!")
@@ -121,17 +99,9 @@ export function WalletManagement() {
 
     setLoading(true)
     try {
-      const { error } = await supabase
-        .from("profiles")
-        .update({
-          wallet_verified: true,
-          wallet_type: "connected",
-          updated_at: new Date().toISOString()
-        })
-        .eq("id", user?.id)
-        .eq("wallet_address", address.toLowerCase())
+      const result = await verifyWalletAction(user!.id, address)
 
-      if (error) throw error
+      if (result.error) throw new Error(result.error)
 
       setSuccess("Wallet verified successfully!")
       await loadUserWallets()
@@ -147,17 +117,9 @@ export function WalletManagement() {
 
     setLoading(true)
     try {
-      const { error } = await supabase
-        .from("profiles")
-        .update({
-          wallet_address: null,
-          wallet_type: null,
-          wallet_verified: false,
-          updated_at: new Date().toISOString()
-        })
-        .eq("id", user.id)
+      const result = await removeWalletAction(user!.id)
 
-      if (error) throw error
+      if (result.error) throw new Error(result.error)
 
       setSuccess("Wallet removed successfully!")
       await loadUserWallets()
@@ -218,8 +180,8 @@ export function WalletManagement() {
                   This address will receive USDC payments from your campaigns
                 </p>
               </div>
-              <Button 
-                onClick={addWallet} 
+              <Button
+                onClick={addWallet}
                 disabled={loading || !newWalletAddress.trim()}
                 className="w-full sm:w-auto"
               >
@@ -325,4 +287,4 @@ export function WalletManagement() {
       </Card>
     </div>
   )
-} 
+}

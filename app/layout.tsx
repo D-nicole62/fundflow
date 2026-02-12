@@ -6,9 +6,9 @@ import { ClientProviders } from "@/components/providers/client-providers"
 const inter = Inter({ subsets: ["latin"] })
 
 export const metadata = {
-  title: "FundFlow - Modern Crowdfunding Platform",
+  title: "Thula Funds - Modern Crowdfunding Platform",
   description: "Secure, transparent crowdfunding with Web3 integration",
-    generator: 'v0.dev'
+  generator: 'v0.dev'
 }
 
 export default function RootLayout({

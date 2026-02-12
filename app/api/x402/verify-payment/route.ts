@@ -1,59 +1,46 @@
 import { type NextRequest, NextResponse } from "next/server"
-import { createClient } from "@/lib/supabase/server"
+import { prisma } from "@/lib/prisma"
 
 export async function POST(request: NextRequest) {
   try {
-    const supabase = await createClient()
     const { txHash, amount, endpoint, fromAddress, recipientAddress } = await request.json()
 
     if (!txHash || !amount || !endpoint || !fromAddress) {
       return NextResponse.json({ error: "Missing required payment data" }, { status: 400 })
     }
 
-    // Verify the transaction exists on Base network
-    // Note: In production, you'd want to verify the transaction on-chain
-    // For now, we'll store the payment session for API access
-    
-    const { data: existingSession } = await supabase
-      .from("payment_sessions")
-      .select("*")
-      .eq("tx_hash", txHash)
-      .single()
+    // Check if session exists
+    const existingSession = await prisma.paymentSession.findUnique({
+      where: { txHash: txHash }
+    })
 
     if (existingSession) {
-      return NextResponse.json({ 
-        success: true, 
+      // Basic check if other fields match could be added here
+      return NextResponse.json({
+        success: true,
         message: "Payment already verified",
-        sessionId: existingSession.id 
+        sessionId: existingSession.id
       })
     }
 
     // Store payment session
-    const { data: paymentSession, error } = await supabase
-      .from("payment_sessions")
-      .insert({
+    const paymentSession = await prisma.paymentSession.create({
+      data: {
         tx_hash: txHash,
-        amount: amount,
+        amount: Number(amount), // Ensure number/decimal compatibility
         from_address: fromAddress,
         endpoint: endpoint,
         status: "completed",
-        created_at: new Date().toISOString(),
-      })
-      .select()
-      .single()
+      }
+    })
 
-    if (error) {
-      console.error("Error storing payment session:", error)
-      return NextResponse.json({ error: "Failed to store payment session" }, { status: 500 })
-    }
-
-    // If this payment is for a campaign boost, create the boost record
+    // If this payment is for a campaign boost, handle it
     if (endpoint.includes("/api/campaigns/boost")) {
-      await handleBoostPayment(supabase, txHash, amount, fromAddress, recipientAddress)
+      await handleBoostPayment(txHash, amount, fromAddress, recipientAddress)
     }
 
-    return NextResponse.json({ 
-      success: true, 
+    return NextResponse.json({
+      success: true,
       message: "Payment verified and stored",
       sessionId: paymentSession.id,
       txHash: txHash
@@ -66,10 +53,9 @@ export async function POST(request: NextRequest) {
 }
 
 async function handleBoostPayment(
-  supabase: any, 
-  txHash: string, 
-  amount: number, 
-  fromAddress: string, 
+  txHash: string,
+  amount: number,
+  fromAddress: string,
   recipientAddress?: string
 ) {
   try {
@@ -81,10 +67,9 @@ async function handleBoostPayment(
       boostType = "featured"
     }
 
-    // Note: In a real implementation, you'd need to know which campaign this boost is for
-    // This could be passed in the request or stored in a pending boosts table
     console.log(`Boost payment of $${amount} verified for ${boostType} boost`)
-    
+    // In a real implementation this might trigger other actions (emails, notifications)
+
   } catch (error) {
     console.error("Error handling boost payment:", error)
   }

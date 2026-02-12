@@ -1,7 +1,7 @@
-# FundFlow Setup Guide
+# Thula Funds Setup Guide
 
 ## Overview
-FundFlow is a crowdfunding platform with Web3 integration using Onchain Kit for USDC payments on Base network.
+Thula Funds is a crowdfunding platform with Web3 integration using Onchain Kit for USDC payments on Base network.
 
 ## Environment Variables
 
@@ -17,10 +17,10 @@ SUPABASE_SERVICE_ROLE_KEY=your_supabase_service_role_key
 NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID=your_walletconnect_project_id
 
 # Onchain Kit Configuration
-NEXT_PUBLIC_APP_NAME=FundFlow
+NEXT_PUBLIC_APP_NAME=Thula Funds
 NEXT_PUBLIC_APP_DESCRIPTION=Crowdfunding platform with USDC payments
-NEXT_PUBLIC_APP_URL=https://fundflow.app
-NEXT_PUBLIC_APP_ICON=https://fundflow.app/logo.png
+NEXT_PUBLIC_APP_URL=https://thulafunds.app
+NEXT_PUBLIC_APP_ICON=https://thulafunds.app/logo.png
 ```
 
 ## WalletConnect Project ID Setup
@@ -60,7 +60,7 @@ pnpm dev
 
 ## Onchain Kit Integration
 
-FundFlow uses Onchain Kit for Web3 integration:
+Thula Funds uses Onchain Kit for Web3 integration:
 
 ### Features
 - **Wallet Connection**: Supports Coinbase Wallet, MetaMask, WalletConnect, and other Web3 wallets

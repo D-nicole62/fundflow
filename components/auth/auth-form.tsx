@@ -62,7 +62,7 @@ export function AuthForm({ mode }: AuthFormProps) {
       <CardHeader className="text-center">
         <CardTitle className="text-2xl">{mode === "login" ? "Welcome back" : "Create your account"}</CardTitle>
         <CardDescription>
-          {mode === "login" ? "Sign in to your FundFlow account" : "Start your crowdfunding journey today"}
+          {mode === "login" ? <>Sign in to your <span className="text-pink-500 font-medium">Thula Funds</span> account</> : "Start your crowdfunding journey today"}
         </CardDescription>
       </CardHeader>
       <CardContent>

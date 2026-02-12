@@ -18,9 +18,9 @@ const getMockUser = () => ({
   user_metadata: { full_name: "Demo User" }
 })
 
-export async function createCampaignAction(campaignData: CampaignData) {
+export async function createCampaignAction(formData: FormData) {
   try {
-    console.log("createCampaignAction called with:", campaignData)
+    console.log("createCampaignAction called")
 
     const user = getMockUser()
     const authError = null
@@ -68,7 +68,12 @@ export async function createCampaignAction(campaignData: CampaignData) {
       }
     }
 
-    const { title, description, goalAmount, category, imageUrl, walletAddress } = campaignData
+    const title = formData.get("title") as string
+    const description = formData.get("description") as string
+    const goalAmount = formData.get("goalAmount") as string
+    const category = formData.get("category") as string
+    const walletAddress = formData.get("walletAddress") as string
+    const imageFile = formData.get("image") as File | null
 
     // Validate required fields
     if (!title?.trim()) return { error: "Campaign title is required", success: false }
@@ -86,6 +91,18 @@ export async function createCampaignAction(campaignData: CampaignData) {
     const goalAmountNum = Number.parseFloat(goalAmount)
     if (isNaN(goalAmountNum) || goalAmountNum < 100 || goalAmountNum > 1000000) {
       return { error: "Goal amount must be between $100 and $1,000,000", success: false }
+    }
+
+    // Handle Image Upload
+    let imageUrl = ""
+    if (imageFile && imageFile.size > 0 && imageFile.name !== "undefined") {
+      try {
+        const { saveFile } = await import("@/lib/file-upload")
+        imageUrl = await saveFile(imageFile)
+      } catch (uploadError: any) {
+        console.error("Image upload failed:", uploadError)
+        return { error: "Failed to upload image: " + uploadError.message, success: false }
+      }
     }
 
     console.log("Validation passed, inserting campaign...")
