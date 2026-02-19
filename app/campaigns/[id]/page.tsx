@@ -1,13 +1,7 @@
 import { prisma } from "@/lib/prisma"
 import { notFound } from "next/navigation"
-import { CampaignDetailView } from "@/components/campaigns/campaign-detail-view"
-import type { Campaign } from "@/types/campaign"
 
-interface CampaignPageProps {
-  params: {
-    id: string
-  }
-}
+export const dynamic = "force-dynamic"
 
 export default async function CampaignPage({ params }: CampaignPageProps) {
   const campaignId = params.id

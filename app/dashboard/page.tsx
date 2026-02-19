@@ -1,12 +1,6 @@
 import { redirect } from "next/navigation"
-// import { createClient } from "@/lib/supabase/server" // REMOVED
-import { DashboardHeader } from "@/components/dashboard/dashboard-header"
-import { DashboardStats } from "@/components/dashboard/dashboard-stats"
-import { RecentCampaigns } from "@/components/dashboard/recent-campaigns"
-import { RecentContributions } from "@/components/dashboard/recent-contributions"
-import { Suspense } from "react"
-import { Card, CardContent } from "@/components/ui/card"
-import { Loader2 } from "lucide-react"
+
+export const dynamic = "force-dynamic"
 
 export default async function DashboardPage() {
   try {
