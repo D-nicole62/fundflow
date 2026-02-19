@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation"
 import { CampaignCreateWrapper } from "@/components/campaigns/campaign-create-wrapper"
 
-export default async function CreateCampaignPage() {
+export default function CreateCampaignPage() {
   // Removed server-side Supabase auth check. 
   // Allowing access to the page; the actual submission via Server Action checks for the user (mock user).
   // Alternatively, could check for a cookie here if we implemented one.
