@@ -1,5 +1,10 @@
 import { prisma } from "@/lib/prisma"
 import { notFound } from "next/navigation"
+import { CampaignDetailView } from "@/components/campaigns/campaign-detail-view"
+
+interface CampaignPageProps {
+  params: { id: string }
+}
 
 export const dynamic = "force-dynamic"
 
