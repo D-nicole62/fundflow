@@ -3,12 +3,14 @@
 import { prisma } from "@/lib/prisma"
 import { revalidatePath } from "next/cache"
 
+import { createClient } from "@/lib/supabase/server"
+
 export async function updateUserWallet(walletAddress: string) {
   try {
     console.log("updateUserWallet called with:", walletAddress)
 
-    // Mock Auth Check
-    const user = { id: "user-123" }
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
 
     if (!user) {
       throw new Error("User not authenticated")

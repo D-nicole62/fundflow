@@ -29,27 +29,29 @@ export function AuthForm({ mode }: AuthFormProps) {
     setError("")
 
     try {
-      // Mock login simulation
-      await new Promise(resolve => setTimeout(resolve, 1000))
+      const { createClient } = await import("@/lib/supabase/client")
+      const supabase = createClient()
 
-      // Basic client-side validation just for show
-      if (password.length < 6) {
-        throw new Error("Password must be at least 6 characters")
+      if (mode === "signup") {
+        const { error } = await supabase.auth.signUp({
+          email,
+          password,
+          options: {
+            data: {
+              full_name: fullName,
+            },
+          },
+        })
+        if (error) throw error
+        router.push("/auth/verify-email")
+      } else {
+        const { error } = await supabase.auth.signInWithPassword({
+          email,
+          password,
+        })
+        if (error) throw error
+        router.push("/dashboard")
       }
-
-      // Set mock user in local storage to be picked up by Providers
-      const mockUser = {
-        id: "user-123",
-        email: email,
-        user_metadata: { full_name: fullName || "Demo User" }
-      }
-      localStorage.setItem("mock_auth_user", JSON.stringify(mockUser))
-
-      console.log("Mock login/signup successful", { email, mode })
-
-      // Force reload to pick up auth state change in Providers (simpler than context bridge for now)
-      window.location.href = "/dashboard"
-
     } catch (error: any) {
       setError(error.message)
     } finally {

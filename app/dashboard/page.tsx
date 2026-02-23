@@ -1,16 +1,19 @@
 import { redirect } from "next/navigation"
+import { createClient } from "@/lib/supabase/server"
+import { DashboardHeader } from "@/components/dashboard/dashboard-header"
+import { DashboardStats } from "@/components/dashboard/dashboard-stats"
+import { RecentCampaigns } from "@/components/dashboard/recent-campaigns"
+import { RecentContributions } from "@/components/dashboard/recent-contributions"
+import { Suspense } from "react"
+import { Card, CardContent } from "@/components/ui/card"
+import { Loader2 } from "lucide-react"
 
 export const dynamic = "force-dynamic"
 
 export default async function DashboardPage() {
   try {
-    // Replaced Supabase Auth with Mock Context
-    // In a real app: check headers/cookies for session.
-    // For local demo/dev: Assume logged in as "user-123"
-
-    // We can simulate a "check" here. If we wanted to enforce login page visit first,
-    // we would check a cookie. For now, we assume if they hit dashboard they are "logged in".
-    const user = { id: "user-123", email: "demo@example.com" }
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
 
     if (!user) {
       redirect("/auth/login")

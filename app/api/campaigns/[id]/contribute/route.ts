@@ -111,11 +111,16 @@ export async function POST(
     // Get request body for contribution details
     const { message, anonymous } = await request.json()
 
-    // Mock Auth Check
-    // In a real app we'd verify the user from the session/token/headers
-    // For now, we use a placeholder user ID or extract from request if passed (insecure but fits "mock" paradigm)
-    // Or we just use a known "demo" user ID if none provided.
-    const mockUserId = "user-123" // Hardcoded for demo parity with other actions
+    // Real Supabase Auth Check
+    const { createClient } = await import("@/lib/supabase/server")
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+
+    if (!user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+    }
+
+    const userId = user.id
 
     // Get campaign details for updating current amount
     const campaign = await prisma.campaign.findUnique({
@@ -126,12 +131,11 @@ export async function POST(
       return NextResponse.json({ error: "Campaign not found" }, { status: 404 })
     }
 
-    // Ensure Contributor exists (mock user)
+    // Ensure Contributor exists (Supabase user)
     // Since we added a relation, the user needs to exist in Prisma.
-    // We should upsert the mock user to be safe.
     await prisma.profile.upsert({
-      where: { id: mockUserId },
-      create: { id: mockUserId, full_name: "Demo User" },
+      where: { id: userId },
+      create: { id: userId, full_name: "User" },
       update: {}
     })
 
@@ -139,7 +143,7 @@ export async function POST(
     const contribution = await prisma.contribution.create({
       data: {
         campaign_id: campaignId,
-        contributor_id: mockUserId,
+        contributor_id: userId,
         amount: Number(amount),
         message: message || null,
         anonymous: anonymous || false,

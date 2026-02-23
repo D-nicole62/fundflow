@@ -2,9 +2,8 @@ import { redirect } from "next/navigation"
 import { CampaignCreateWrapper } from "@/components/campaigns/campaign-create-wrapper"
 
 export default function CreateCampaignPage() {
-  // Removed server-side Supabase auth check. 
-  // Allowing access to the page; the actual submission via Server Action checks for the user (mock user).
-  // Alternatively, could check for a cookie here if we implemented one.
+  // Middleware handles initial session check and redirect.
+  // Server-side getUser() in actions provides additional security.
 
   return (
     <div className="min-h-screen bg-muted/30">

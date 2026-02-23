@@ -2,15 +2,11 @@
 
 import { prisma } from "@/lib/prisma"
 import { revalidatePath } from "next/cache"
-
-// Mock user for migration context
-const getMockUser = () => ({
-  id: "user-123",
-  user_metadata: { full_name: "Demo User" }
-})
+import { createClient } from "@/lib/supabase/server"
 
 export async function createContribution(campaignId: string, amount: number, message?: string, anonymous?: boolean) {
-  const user = getMockUser()
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
 
   if (!user) {
     throw new Error("User not authenticated")

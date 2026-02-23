@@ -2,6 +2,7 @@
 
 import { prisma } from "@/lib/prisma"
 import { revalidatePath } from "next/cache"
+import { createClient } from "@/lib/supabase/server"
 
 interface CampaignData {
   title: string
@@ -12,23 +13,17 @@ interface CampaignData {
   walletAddress: string
 }
 
-// Mock user for migration context
-const getMockUser = () => ({
-  id: "user-123",
-  user_metadata: { full_name: "Demo User" }
-})
-
 export async function createCampaignAction(formData: FormData) {
   try {
     console.log("createCampaignAction called")
 
-    const user = getMockUser()
-    const authError = null
+    const supabase = await createClient()
+    const { data: { user }, error: authError } = await supabase.auth.getUser()
 
     if (authError) {
       console.error("Auth error:", authError)
       return {
-        error: `Authentication failed: Mock auth error`,
+        error: `Authentication failed: ${authError.message}`,
         success: false,
       }
     }
@@ -97,8 +92,8 @@ export async function createCampaignAction(formData: FormData) {
     let imageUrl = ""
     if (imageFile && imageFile.size > 0 && imageFile.name !== "undefined") {
       try {
-        const { saveFile } = await import("@/lib/file-upload")
-        imageUrl = await saveFile(imageFile)
+        const { uploadFile } = await import("@/lib/file-upload")
+        imageUrl = await uploadFile(imageFile)
       } catch (uploadError: any) {
         console.error("Image upload failed:", uploadError)
         return { error: "Failed to upload image: " + uploadError.message, success: false }
@@ -182,7 +177,8 @@ export async function createCampaignAction(formData: FormData) {
 
 export async function updateCampaign(campaignId: string, formData: FormData) {
   try {
-    const user = getMockUser()
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
 
     if (!user) throw new Error("User not authenticated")
 
@@ -220,7 +216,8 @@ export async function updateCampaign(campaignId: string, formData: FormData) {
 
 export async function deleteCampaign(campaignId: string) {
   try {
-    const user = getMockUser()
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
 
     if (!user) throw new Error("User not authenticated")
 

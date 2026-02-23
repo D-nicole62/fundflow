@@ -1,19 +1,29 @@
-import { writeFile } from "fs/promises"
-import { join } from "path"
+import { createClient } from "@/lib/supabase/server"
 
-export async function saveFile(file: File): Promise<string> {
+export async function uploadFile(file: File, bucket: string = "campaigns"): Promise<string> {
+    const supabase = await createClient()
+
     const bytes = await file.arrayBuffer()
     const buffer = Buffer.from(bytes)
 
-    // Create a unique filename
-    const uniqueSuffix = `${Date.now()}-${Math.round(Math.random() * 1e9)}`
-    const filename = `${uniqueSuffix}-${file.name.replace(/[^a-zA-Z0-9.-]/g, "")}`
+    const fileExt = file.name.split('.').pop()
+    const fileName = `${Math.random().toString(36).substring(2)}-${Date.now()}.${fileExt}`
+    const filePath = fileName
 
-    // Save to public/uploads
-    const uploadDir = join(process.cwd(), "public", "uploads")
-    const filepath = join(uploadDir, filename)
+    const { data, error } = await supabase.storage
+        .from(bucket)
+        .upload(filePath, buffer, {
+            contentType: file.type,
+            upsert: false
+        })
 
-    await writeFile(filepath, buffer)
+    if (error) {
+        throw new Error(`Upload failed: ${error.message}`)
+    }
 
-    return `/uploads/${filename}`
+    const { data: { publicUrl } } = supabase.storage
+        .from(bucket)
+        .getPublicUrl(filePath)
+
+    return publicUrl
 }
