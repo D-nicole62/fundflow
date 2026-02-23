@@ -3,8 +3,9 @@ generator client {
 }
 
 datasource db {
-  provider = "mysql"
-  url      = env("DATABASE_URL")
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
 }
 
 model Profile {
@@ -33,7 +34,7 @@ model Campaign {
   goal_amount      Decimal          @db.Decimal(15, 2)
   status           String           @default("active")
   category         String?
-  image_url        String?          @db.LongText
+  image_url        String?          @db.Text
   wallet_address   String?
   payment_method   String?
   creator_id       String
